@@ -1,0 +1,7 @@
+{
+  "access_token": "your_access_token_here",
+  "refresh_token": "your_refresh_token_here",
+  "expires_at": 1234567890000,
+  "token_type": "Bearer",
+  "user_id": "your_user_id"
+}

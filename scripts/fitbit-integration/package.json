@@ -1,0 +1,24 @@
+{
+  "name": "fitbit-integration",
+  "version": "1.0.0",
+  "description": "Fitbit API integration for fitness tracking",
+  "main": "auth-server.js",
+  "scripts": {
+    "start": "node auth-server.js",
+    "fetch": "node fetch-data.js",
+    "fetch:date": "node fetch-data.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "fitbit",
+    "fitness",
+    "health",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT"
+}

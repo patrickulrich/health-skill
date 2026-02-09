@@ -1,0 +1,25 @@
+# Large food database files (download separately)
+data/ComprehensiveFoodDatabase/extracted/
+data/ComprehensiveFoodDatabase/*.zip
+data/opennutrition.sqlite
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# User configuration (contains local paths)
+config.json
+
+# Secrets (API keys, OAuth credentials — never tracked)
+.env
+
+# User data (auto-created on first use)
+meal_history_cache.json
+pr_history.json
+saved_meals.json
+saved_workouts.json
+
+# Claude Code auto-generated files
+**/CLAUDE.md
+**/.claude/

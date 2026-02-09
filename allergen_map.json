@@ -1,0 +1,47 @@
+{
+  "peanuts": {
+    "keywords": ["peanut", "peanuts", "peanut butter", "groundnut"],
+    "also_check": ["satay", "pad thai", "peanut sauce"],
+    "severity": "high"
+  },
+  "tree_nuts": {
+    "keywords": ["almond", "walnut", "pecan", "cashew", "pistachio", "macadamia", "hazelnut", "brazil nut"],
+    "also_check": ["almond milk", "almond butter", "trail mix", "granola"],
+    "severity": "high"
+  },
+  "shellfish": {
+    "keywords": ["shrimp", "crab", "lobster", "crawfish", "prawn", "scallop", "mussel", "clam", "oyster"],
+    "also_check": ["seafood", "paella", "gumbo", "bisque"],
+    "severity": "high"
+  },
+  "dairy": {
+    "keywords": ["milk", "cheese", "butter", "cream", "yogurt", "whey", "casein", "ice cream"],
+    "also_check": ["pizza", "mac and cheese", "alfredo", "queso", "ranch"],
+    "severity": "moderate"
+  },
+  "gluten": {
+    "keywords": ["wheat", "bread", "pasta", "flour", "barley", "rye", "cereal"],
+    "also_check": ["pizza", "sandwich", "wrap", "pancake", "cake", "cookie", "cracker", "toast"],
+    "severity": "moderate"
+  },
+  "eggs": {
+    "keywords": ["egg", "eggs", "mayo", "mayonnaise"],
+    "also_check": ["french toast", "quiche", "custard"],
+    "severity": "moderate"
+  },
+  "soy": {
+    "keywords": ["soy", "soybean", "tofu", "tempeh", "edamame", "soy sauce", "soy milk"],
+    "also_check": ["miso", "teriyaki"],
+    "severity": "moderate"
+  },
+  "fish": {
+    "keywords": ["fish", "salmon", "tuna", "cod", "tilapia", "halibut", "sardine", "anchovy", "trout", "bass", "mackerel"],
+    "also_check": ["fish sauce", "caesar dressing", "worcestershire"],
+    "severity": "moderate"
+  },
+  "sesame": {
+    "keywords": ["sesame", "tahini", "hummus"],
+    "also_check": ["sesame oil", "sesame seeds"],
+    "severity": "moderate"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "WORKSPACE": "/path/to/your/workspace",
+  "FITNESS_DIR": "/path/to/your/workspace/fitness",
+  "DIET_DIR": "/path/to/your/workspace/diet",
+  "DB_PATH": null,
+  "FOOD_SOURCES": ["local_db", "opennutrition", "usda_api"],
+  "OPENNUTRITION_DB_PATH": null,
+  "GOALS": {
+    "goal_type": "maintenance",
+    "weight_kg": null,
+    "height_cm": null,
+    "age": null,
+    "sex": "male",
+    "activity_level": "moderate",
+    "protein_per_kg": 0.8,
+    "calorie_target": null,
+    "sodium_limit_mg": 2300,
+    "fiber_target_g": 38,
+    "step_target": 10000,
+    "sleep_target_h": 7.0
+  },
+  "DIETARY_PROFILE": {
+    "allergies": [],
+    "dietary_restrictions": [],
+    "dislikes": [],
+    "cuisine_preferences": [],
+    "health_conditions": [],
+    "cooking_skill": null,
+    "budget": null,
+    "meal_timing": null,
+    "meal_variety": "balanced",
+    "notes": ""
+  }
+}

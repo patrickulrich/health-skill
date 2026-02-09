@@ -1,0 +1,434 @@
+[
+  {
+    "canonical": "Chest Press Machine",
+    "aliases": ["chest press", "chest press machine", "machine chest press"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Incline Chest Press Machine",
+    "aliases": ["incline chest press", "incline press machine", "incline chest press machine", "incline press"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Pec Fly Machine",
+    "aliases": ["pec fly", "pec fly machine", "butterfly", "butterfly machine", "chest fly machine", "pec deck"],
+    "muscle_groups": ["chest"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Chest Dip Machine",
+    "aliases": ["chest dip machine", "assisted dip machine", "dip machine"],
+    "muscle_groups": ["chest", "triceps", "shoulders"],
+    "type": "compound"
+  },
+  {
+    "canonical": "DB Bench Press",
+    "aliases": ["db bench press", "dumbbell bench press", "db bench", "dumbbell bench"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "DB Incline Press",
+    "aliases": ["db incline press", "dumbbell incline press", "db incline", "incline dumbbell press"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "DB Fly",
+    "aliases": ["db fly", "dumbbell fly", "db flyes", "dumbbell flyes"],
+    "muscle_groups": ["chest"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Lat Pulldown Machine",
+    "aliases": ["lat pulldown", "lat pulldown machine", "lat pull", "pulldown", "lat pull down"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Seated Row Machine",
+    "aliases": ["seated row", "seated row machine", "machine row", "row machine"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "T-Bar Row Machine",
+    "aliases": ["t-bar row", "t bar row", "tbar row", "t-bar row machine"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Back Extension Machine",
+    "aliases": ["back extension", "back extension machine", "lower back machine", "hyperextension machine"],
+    "muscle_groups": ["back"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Cable Row",
+    "aliases": ["cable row", "cable rows"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "DB Row",
+    "aliases": ["db row", "dumbbell row", "db rows", "dumbbell rows", "one arm row"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Assisted Chin-up",
+    "aliases": ["assisted chin-up", "assisted chinup", "assisted chin up", "chin up machine", "chinup machine"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Shoulder Press Machine",
+    "aliases": ["shoulder press", "shoulder press machine", "machine shoulder press", "ohp machine"],
+    "muscle_groups": ["shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Shoulder Raise Machine",
+    "aliases": ["shoulder raise machine", "lateral raise machine", "side raise machine"],
+    "muscle_groups": ["shoulders"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Rear Deltoid Machine",
+    "aliases": ["rear delt", "rear deltoid", "rear delt machine", "rear deltoid machine", "reverse fly machine"],
+    "muscle_groups": ["shoulders", "back"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "DB Shoulder Press",
+    "aliases": ["db shoulder press", "dumbbell shoulder press", "db ohp", "dumbbell ohp", "db overhead press"],
+    "muscle_groups": ["shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "DB Lateral Raise",
+    "aliases": ["db lateral raise", "dumbbell lateral raise", "lateral raise", "side raise", "db side raise"],
+    "muscle_groups": ["shoulders"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Bicep Curl Machine",
+    "aliases": ["bicep curl machine", "curl machine", "machine curl", "machine bicep curl"],
+    "muscle_groups": ["biceps"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Tricep Extension Machine",
+    "aliases": ["tricep extension machine", "tricep machine", "machine tricep extension", "tricep ext machine"],
+    "muscle_groups": ["triceps"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Cable Bicep Curl",
+    "aliases": ["cable bicep curl", "cable curl", "cable curls"],
+    "muscle_groups": ["biceps"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Cable Tricep Pushdown",
+    "aliases": ["cable tricep pushdown", "tricep pushdown", "cable pushdown", "rope pushdown", "pushdown"],
+    "muscle_groups": ["triceps"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "DB Curl",
+    "aliases": ["db curl", "dumbbell curl", "db curls", "dumbbell curls", "bicep curl"],
+    "muscle_groups": ["biceps"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Hammer Curl",
+    "aliases": ["hammer curl", "hammer curls"],
+    "muscle_groups": ["biceps", "forearms"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "DB Tricep Kickback",
+    "aliases": ["db tricep kickback", "tricep kickback", "dumbbell kickback", "kickback"],
+    "muscle_groups": ["triceps"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Leg Press Machine",
+    "aliases": ["leg press", "leg press machine"],
+    "muscle_groups": ["quads", "glutes", "hamstrings"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Leg Extension Machine",
+    "aliases": ["leg extension", "leg ext", "leg extension machine"],
+    "muscle_groups": ["quads"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Leg Curl Machine",
+    "aliases": ["leg curl", "leg curl machine", "hamstring curl", "ham curl"],
+    "muscle_groups": ["hamstrings"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Hip Abductor Machine",
+    "aliases": ["hip abductor", "hip abductor machine", "abductor machine", "outer thigh machine"],
+    "muscle_groups": ["glutes"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Hip Adductor Machine",
+    "aliases": ["hip adductor", "hip adductor machine", "adductor machine", "inner thigh machine"],
+    "muscle_groups": ["adductors"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Glute Bridge Machine",
+    "aliases": ["glute bridge machine", "hip thrust machine", "glute machine"],
+    "muscle_groups": ["glutes", "hamstrings"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Glute Kickback Machine",
+    "aliases": ["glute kickback", "glute kickback machine"],
+    "muscle_groups": ["glutes"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Sled Push Machine",
+    "aliases": ["sled push", "sled push machine", "prowler"],
+    "muscle_groups": ["quads", "glutes", "calves"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Calf Raise",
+    "aliases": ["calf raise", "calf raises", "calf raise machine", "standing calf raise", "seated calf raise"],
+    "muscle_groups": ["calves"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Ab Crunch Machine",
+    "aliases": ["ab crunch", "ab crunch machine", "crunch machine", "ab machine"],
+    "muscle_groups": ["core"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Torso Rotation Machine",
+    "aliases": ["torso rotation", "torso rotation machine", "rotary torso"],
+    "muscle_groups": ["core", "obliques"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Roman Chair",
+    "aliases": ["roman chair", "back raise", "hyperextension"],
+    "muscle_groups": ["back", "core"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Captain's Chair",
+    "aliases": ["captains chair", "captain's chair", "hanging leg raise", "knee raise"],
+    "muscle_groups": ["core"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Decline Bench Situp",
+    "aliases": ["decline situp", "decline bench situp", "decline sit-up", "decline bench sit-up"],
+    "muscle_groups": ["core"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Ab Roller",
+    "aliases": ["ab roller", "ab wheel", "ab rollout"],
+    "muscle_groups": ["core"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Smith Machine Squat",
+    "aliases": ["smith squat", "smith machine squat", "smith machine squats"],
+    "muscle_groups": ["quads", "glutes", "hamstrings"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Smith Machine Bench",
+    "aliases": ["smith bench", "smith machine bench", "smith bench press", "smith machine bench press"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Smith Machine Row",
+    "aliases": ["smith row", "smith machine row", "smith machine rows"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Smith Machine OHP",
+    "aliases": ["smith ohp", "smith machine ohp", "smith overhead press", "smith machine overhead press"],
+    "muscle_groups": ["shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Smith Machine Lunge",
+    "aliases": ["smith lunge", "smith machine lunge", "smith machine lunges"],
+    "muscle_groups": ["quads", "glutes"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Smith Machine Calf Raise",
+    "aliases": ["smith calf raise", "smith machine calf raise"],
+    "muscle_groups": ["calves"],
+    "type": "isolation"
+  },
+  {
+    "canonical": "Squat",
+    "aliases": ["squat", "squats", "barbell squat", "back squat", "bb squat"],
+    "muscle_groups": ["quads", "glutes", "hamstrings", "core"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Deadlift",
+    "aliases": ["deadlift", "deadlifts", "conventional deadlift", "dl"],
+    "muscle_groups": ["back", "glutes", "hamstrings", "core"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Overhead Press",
+    "aliases": ["overhead press", "ohp", "military press", "standing press"],
+    "muscle_groups": ["shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Barbell Row",
+    "aliases": ["barbell row", "bb row", "bent over row", "bent-over row", "pendlay row"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Bench Press",
+    "aliases": ["bench press", "bench", "flat bench", "bb bench", "barbell bench", "barbell bench press"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "compound"
+  },
+  {
+    "canonical": "DB Goblet Squat",
+    "aliases": ["goblet squat", "db goblet squat", "dumbbell goblet squat"],
+    "muscle_groups": ["quads", "glutes"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Push-up",
+    "aliases": ["push-up", "pushup", "pushups", "push-ups", "push up", "push ups"],
+    "muscle_groups": ["chest", "shoulders", "triceps"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Pull-up",
+    "aliases": ["pull-up", "pullup", "pullups", "pull-ups", "pull up", "pull ups", "chin-up", "chinup"],
+    "muscle_groups": ["back", "biceps"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Dip",
+    "aliases": ["dip", "dips", "bodyweight dip", "bodyweight dips"],
+    "muscle_groups": ["chest", "triceps", "shoulders"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Sit-up",
+    "aliases": ["sit-up", "situp", "situps", "sit-ups", "sit up", "sit ups"],
+    "muscle_groups": ["core"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Crunch",
+    "aliases": ["crunch", "crunches"],
+    "muscle_groups": ["core"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Plank",
+    "aliases": ["plank", "planks"],
+    "muscle_groups": ["core"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Bodyweight Squat",
+    "aliases": ["bodyweight squat", "bodyweight squats", "air squat", "air squats"],
+    "muscle_groups": ["quads", "glutes"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Lunge",
+    "aliases": ["lunge", "lunges", "walking lunge", "walking lunges"],
+    "muscle_groups": ["quads", "glutes"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Burpee",
+    "aliases": ["burpee", "burpees"],
+    "muscle_groups": ["full body"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Treadmill",
+    "aliases": ["treadmill", "running", "run", "jog", "jogging"],
+    "muscle_groups": ["cardio"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Elliptical",
+    "aliases": ["elliptical", "elliptical machine"],
+    "muscle_groups": ["cardio"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Stationary Bike",
+    "aliases": ["stationary bike", "bike", "cycling", "cycle", "spin bike"],
+    "muscle_groups": ["cardio", "quads"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Recumbent Bike",
+    "aliases": ["recumbent bike", "recumbent"],
+    "muscle_groups": ["cardio", "quads"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "ARC Trainer",
+    "aliases": ["arc trainer", "arc"],
+    "muscle_groups": ["cardio"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Stair Climber",
+    "aliases": ["stair climber", "stairmaster", "stair master", "stair stepper", "step mill"],
+    "muscle_groups": ["cardio", "quads", "glutes"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Rowing Machine",
+    "aliases": ["rowing machine", "rower", "rowing", "erg", "row machine"],
+    "muscle_groups": ["cardio", "back"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Kettlebell Swing",
+    "aliases": ["kettlebell swing", "kb swing", "kettlebell swings", "kb swings"],
+    "muscle_groups": ["glutes", "hamstrings", "core", "shoulders"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Battle Ropes",
+    "aliases": ["battle ropes", "battle rope", "ropes"],
+    "muscle_groups": ["shoulders", "core", "cardio"],
+    "type": "compound"
+  },
+  {
+    "canonical": "Resistance Band",
+    "aliases": ["resistance band", "band", "bands", "resistance bands"],
+    "muscle_groups": ["full body"],
+    "type": "compound"
+  }
+]
