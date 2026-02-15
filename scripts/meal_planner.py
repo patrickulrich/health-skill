@@ -8,6 +8,7 @@ import sys
 import os
 import json
 import random
+import re
 from datetime import datetime, timedelta
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -211,7 +212,8 @@ def filter_templates(templates, profile=None, meal_type=None):
         # Dislikes filter
         if 'dislikes' not in relax and dislikes:
             ingredients = [i.lower() for i in (meal.get('ingredients') or [])]
-            if any(d in ' '.join(ingredients) for d in dislikes):
+            joined = ' '.join(ingredients)
+            if any(re.search(r'\b' + re.escape(d) + r'\b', joined) for d in dislikes):
                 return False
 
         # Season filter
@@ -327,7 +329,7 @@ def score_template(template, remaining, profile=None, history=None):
     today_food_names = history.get('today_food_names', [])
     if today_food_names and template_ingredients:
         overlap = sum(1 for f in today_food_names
-                      if any(f in ing for ing in template_ingredients))
+                      if any(re.search(r'\b' + re.escape(f) + r'\b', ing) for ing in template_ingredients))
         if overlap > 0:
             repetition_penalty = max(0, 1.0 - overlap / len(template_ingredients))
 
@@ -350,10 +352,36 @@ def score_template(template, remaining, profile=None, history=None):
     # 10. Random factor
     random_factor_val = random.random()
 
+    # 11. Health condition penalty (0-1, 1.0 = no concern, lower = penalized)
+    health_condition_score = 1.0
+    conditions = [c.lower() for c in (profile.get('health_conditions') or [])]
+    if conditions:
+        penalties = 0
+        checks = 0
+        if 'diabetes' in conditions:
+            checks += 1
+            if template.get('carbs', 0) > 60:
+                penalties += 1
+        if 'hypertension' in conditions:
+            checks += 1
+            if template.get('sodium', 0) > 600:
+                penalties += 1
+        if 'high_cholesterol' in conditions:
+            checks += 1
+            if template.get('fat', 0) > 25:
+                penalties += 1
+        if checks > 0:
+            health_condition_score = 1.0 - (penalties / checks)
+
     # Weighted sum
+    # Health condition weight is taken proportionally from calorie_fit and protein_fit
+    health_weight = 0.10 if conditions else 0.0
+    cal_weight = weights['calorie_fit'] - (health_weight * 0.5) if conditions else weights['calorie_fit']
+    prot_weight = weights['protein_fit'] - (health_weight * 0.5) if conditions else weights['protein_fit']
+
     score = (
-        weights['calorie_fit'] * calorie_fit
-        + weights['protein_fit'] * protein_fit
+        cal_weight * calorie_fit
+        + prot_weight * protein_fit
         + weights['sodium_ok'] * sodium_ok
         + weights['cuisine_bonus'] * cuisine_bonus
         + weights['cuisine_diverse'] * cuisine_diverse
@@ -362,6 +390,7 @@ def score_template(template, remaining, profile=None, history=None):
         + weights['familiarity_bonus'] * familiarity_bonus
         + weights['pattern_match'] * pattern_match
         + weights['random_factor'] * random_factor_val
+        + health_weight * health_condition_score
     )
 
     return score
@@ -488,7 +517,7 @@ def format_suggestions(suggestions, remaining=None):
 
         if remaining and remaining['calories'] > 0:
             cal_pct = int(t['calories'] / remaining['calories'] * 100)
-            prot_pct = int(t['protein'] / max(remaining['protein'], 1) * 100)
+            prot_pct = min(999, int(t['protein'] / max(remaining['protein'], 1) * 100)) if remaining['protein'] > 0 else 0
             lines.append(f"   Fills {cal_pct}% of remaining calories, "
                          f"{prot_pct}% of remaining protein")
         lines.append("")

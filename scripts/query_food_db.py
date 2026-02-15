@@ -45,8 +45,15 @@ def _search_local_db(query, limit=20):
     for table_name, source in tables:
         try:
             if table_name == 'usda_non_branded_column':
+                # Check if sodium column exists; some schema versions omit it
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                col_names = {row[1] for row in cursor.fetchall()}
+                sodium_col = 'sodiumna_amount' if 'sodiumna_amount' in col_names else (
+                    'sodium_amount' if 'sodium_amount' in col_names else None
+                )
+                sodium_expr = sodium_col if sodium_col else "'0'"
                 cursor.execute(f"""
-                    SELECT description, energy_amount, protein_amount, carb_amount, fat_amount, '0', fiber_amount, serving_size
+                    SELECT description, energy_amount, protein_amount, carb_amount, fat_amount, {sodium_expr}, fiber_amount, serving_size
                     FROM {table_name}
                     WHERE description LIKE ?
                     LIMIT ?
@@ -219,7 +226,7 @@ def _search_usda_api(query, limit=20):
                 nutrients[_USDA_NUTRIENT_IDS[nid]] = nutrient.get('value', 0) or 0
 
         calories = nutrients.get('calories', 0)
-        if not calories:
+        if calories is None:
             continue
 
         serving_g = float(food.get('servingSize', 100) or 100)
@@ -305,7 +312,7 @@ def calculate_meal_macros(food_items):
                 multiplier = quantity / serving_g if serving_g > 0 else quantity / 100
             elif unit == 'oz':
                 grams = quantity * 28.35
-                multiplier = grams / serving_g if serving_g > 0 else quantity
+                multiplier = grams / serving_g if serving_g > 0 else grams / 100
             else:
                 # pieces, cups, servings, bowls — use raw multiplier
                 multiplier = quantity

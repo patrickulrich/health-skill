@@ -15,7 +15,7 @@ SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, SKILL_DIR)
 
 from config import FITNESS_DIR
-from scripts.exercise_db import normalize_exercise_name
+from scripts.exercise_db import normalize_exercise_name, is_known_exercise
 
 
 def get_date():
@@ -49,7 +49,7 @@ def _expand_template(text):
     saved = _load_saved_workouts()
     text_lower = text.strip().lower()
     for name, expansion in saved.items():
-        if name in text_lower:
+        if re.search(r'\b' + re.escape(name) + r'\b', text_lower):
             return expansion
     return text
 
@@ -67,7 +67,7 @@ def _parse_single_segment(segment):
 
     # Pattern A: "X sets of [N] exercise [@ W lbs]"
     match = re.search(
-        r'(\d+)\s+sets?\s*(?:of|x)\s+(?:(\d+)\s+)?(.+?)(?:\s*(?:@|at|with)\s*(\d+\.?\d*)\s*(?:lbs?|pounds?|kg))?$',
+        r'(\d+)\s+sets?\s*(?:of|x)?\s+(?:(\d+)\s+)?(.+?)(?:\s*(?:@|at|with)\s*(\d+\.?\d*)\s*(?:lbs?|pounds?|kg))?$',
         segment, re.IGNORECASE
     )
     if match:
@@ -80,12 +80,13 @@ def _parse_single_segment(segment):
         if weight:
             ex['weight'] = f"{weight} lbs"
             ex['weight_val'] = weight
-            ex['volume'] = int(sets * reps * weight)
+            if reps > 0:
+                ex['volume'] = int(sets * reps * weight)
         exercises.append(ex)
         return exercises
 
-    # Pattern B: "I did X exercise"
-    match = re.search(r'(?:did|do)\s+(\d+)\s+(.+?)$', segment, re.IGNORECASE)
+    # Pattern B: "I did/done X exercise"
+    match = re.search(r'(?:did|do|done|finished|completed)\s+(\d+)\s+(.+?)$', segment, re.IGNORECASE)
     if match:
         count = int(match.group(1))
         raw_name = match.group(2).strip()
@@ -104,17 +105,29 @@ def _parse_single_segment(segment):
         exercise_name = normalize_exercise_name(raw_name)
         exercises.append({
             'name': exercise_name,
+            'sets': 1,
+            'reps': 1,
             'weight': f"{weight_val} lbs",
             'weight_val': weight_val,
-            'volume': 0,
+            'volume': int(weight_val),
         })
         return exercises
 
+    # Pattern D2: bare "N exercise" (e.g., "50 pullups" from "and" split)
+    match = re.search(r'^(\d+)\s+(.+?)$', segment, re.IGNORECASE)
+    if match:
+        count = int(match.group(1))
+        raw_name = match.group(2).strip()
+        if is_known_exercise(raw_name):
+            exercise_name = normalize_exercise_name(raw_name)
+            exercises.append({'name': exercise_name, 'count': count})
+            return exercises
+
     # Pattern D: bare exercise name (from template expansion)
+    # Only add if the exercise is actually in the database
     raw_name = segment.strip()
-    if raw_name and len(raw_name) > 1:
+    if raw_name and len(raw_name) > 1 and is_known_exercise(raw_name):
         exercise_name = normalize_exercise_name(raw_name)
-        # Only add if normalization found a known exercise (not just title-cased)
         exercises.append({
             'name': exercise_name,
             'sets': None,
@@ -145,13 +158,13 @@ def parse_workout_text(text):
     # Detect workout type
     if 'gym' in text_lower:
         result['workout_type'] = 'Gym'
-    elif 'run' in text_lower or 'jog' in text_lower or 'bike' in text_lower or 'cycle' in text_lower or 'swim' in text_lower or 'pool' in text_lower or 'walk' in text_lower:
+    elif re.search(r'\b(run|ran|jog|jogged|bike|biked|cycle|cycled|swim|swam|pool|walk|walked)\b', text_lower):
         result['workout_type'] = 'Cardio'
-        if 'cycle' in text_lower or 'bike' in text_lower:
+        if re.search(r'\b(cycle|cycled|bike|biked)\b', text_lower):
             result['workout_type'] = 'Cardio - Cycling'
-        elif 'swim' in text_lower or 'pool' in text_lower:
+        elif re.search(r'\b(swim|swam|pool)\b', text_lower):
             result['workout_type'] = 'Cardio - Swimming'
-        elif 'walk' in text_lower:
+        elif re.search(r'\b(walk|walked)\b', text_lower):
             result['workout_type'] = 'Cardio - Walking'
         else:
             result['workout_type'] = 'Cardio - Running'
@@ -167,11 +180,20 @@ def parse_workout_text(text):
         result['workout_type'] = 'Resistance Training'
 
     # Handle cardio with distance/duration first (special case)
-    if any(kw in text_lower for kw in ['run', 'jog', 'bike', 'cycle', 'swim', 'pool', 'walk']):
-        distance_match = re.search(r'(\d+\.?\d*)\s*(km|kilo|miles?|mi)\b', text, re.IGNORECASE)
-        distance = f"{distance_match.group(1)} {distance_match.group(2)}" if distance_match else None
+    if re.search(r'\b(run|ran|jog|jogged|bike|biked|cycle|cycled|swim|swam|pool|walk|walked)\b', text_lower):
+        distance_match = re.search(r'(\d+\.?\d*)\s*(k|km|kilo|miles?|mi|meters?|m)\b', text, re.IGNORECASE)
+        if distance_match:
+            dist_val = distance_match.group(1)
+            dist_unit = distance_match.group(2).lower()
+            if dist_unit == 'k':
+                dist_unit = 'km'
+            elif dist_unit in ('m', 'meters', 'meter'):
+                dist_unit = 'm'
+            distance = f"{dist_val} {dist_unit}"
+        else:
+            distance = None
 
-        duration_match = re.search(r'(\d+)\s*(min|minutes?|hour|hours?|h|m)\b', text, re.IGNORECASE)
+        duration_match = re.search(r'(\d+)\s*(min|minutes?|hour|hours?|h)\b', text, re.IGNORECASE)
         duration = None
         if duration_match:
             duration_val = int(duration_match.group(1))
@@ -182,13 +204,13 @@ def parse_workout_text(text):
                 duration = f"{duration_val} min"
 
         if distance or duration:
-            if 'run' in text_lower or 'jog' in text_lower:
+            if re.search(r'\b(run|ran|jog|jogged)\b', text_lower):
                 cardiotype = 'Running'
-            elif 'cycle' in text_lower or 'bike' in text_lower:
+            elif re.search(r'\b(cycle|cycled|bike|biked)\b', text_lower):
                 cardiotype = 'Cycling'
-            elif 'swim' in text_lower or 'pool' in text_lower:
+            elif re.search(r'\b(swim|swam|pool)\b', text_lower):
                 cardiotype = 'Swimming'
-            elif 'walk' in text_lower:
+            elif re.search(r'\b(walk|walked)\b', text_lower):
                 cardiotype = 'Walking'
             else:
                 cardiotype = 'Cardio'
@@ -230,15 +252,15 @@ def parse_workout_text(text):
         elif ex.get('count'):
             result['notes'].append(f"{ex['count']} {ex['name']}")
 
-    # Detect intensity
-    intensity_keywords = {
-        'light': ['easy', 'light', 'warmup', 'recovery'],
-        'moderate': ['medium', 'moderate', 'normal', 'maintain'],
-        'hard': ['hard', 'intense', 'heavy'],
-        'max': ['max', 'failure', 'all-out', '100%']
-    }
+    # Detect intensity (highest priority first so "light warmup then max effort" → Max)
+    intensity_keywords = [
+        ('max', ['max', 'failure', 'all-out', '100%']),
+        ('hard', ['hard', 'intense', 'heavy']),
+        ('moderate', ['medium', 'moderate', 'normal', 'maintain']),
+        ('light', ['easy', 'light', 'warmup', 'recovery']),
+    ]
 
-    for intensity, keywords in intensity_keywords.items():
+    for intensity, keywords in intensity_keywords:
         if any(kw in text_lower for kw in keywords):
             result['intensity'] = intensity.title()
             result['notes'].append(f"Intensity: {intensity}")
@@ -316,8 +338,10 @@ def log_workout_to_file(workout, date):
                         print(f"  NEW WEIGHT PR: {exercise['name']} @ {weight} lbs!")
                     if pr_result['is_volume_pr'] and not pr_result['is_weight_pr']:
                         print(f"  NEW VOLUME PR: {exercise['name']}!")
+                    if pr_result['is_reps_pr'] and not pr_result['is_weight_pr'] and not pr_result['is_volume_pr']:
+                        print(f"  NEW REPS PR: {exercise['name']} - {sets * reps} reps!")
         except Exception as e:
-            pass  # PR tracking is non-critical
+            print(f"Warning: PR tracking failed: {e}")
 
     except Exception as e:
         print(f"Error logging workout: {e}")

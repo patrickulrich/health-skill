@@ -74,6 +74,12 @@ def get_exercise_type(canonical):
     return 'unknown'
 
 
+def is_known_exercise(raw):
+    """Return True if the raw name matches a known exercise in the database."""
+    _ensure_loaded()
+    return raw.strip().lower() in _LOOKUP
+
+
 def reload_db():
     """Re-read exercise_aliases.json (useful for tests)."""
     global _EXERCISES, _LOOKUP

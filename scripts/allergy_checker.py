@@ -7,6 +7,7 @@ Checks food items against user allergens using allergen_map.json.
 import sys
 import os
 import json
+import re
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(SCRIPT_DIR)
@@ -58,10 +59,12 @@ def check_meal_allergens(food_items, raw_text):
     seen = set()  # Avoid duplicate warnings
 
     raw_lower = raw_text.lower()
+    unrecognized = []
 
     for allergen in user_allergies:
         allergen_lower = allergen.lower()
         if allergen_lower not in allergen_map:
+            unrecognized.append(allergen)
             continue
 
         entry = allergen_map[allergen_lower]
@@ -71,9 +74,11 @@ def check_meal_allergens(food_items, raw_text):
 
         # Check each parsed food item against keywords (direct match)
         for item in food_items:
-            food_name = item[0].lower() if isinstance(item, (list, tuple)) else item.lower()
+            if not item:
+                continue
+            food_name = item[0].lower() if isinstance(item, (list, tuple)) else str(item).lower()
             for keyword in keywords:
-                if keyword.lower() in food_name:
+                if re.search(r'\b' + re.escape(keyword.lower()) + r'\b', food_name):
                     warn_key = (allergen_lower, keyword.lower())
                     if warn_key not in seen:
                         seen.add(warn_key)
@@ -87,7 +92,7 @@ def check_meal_allergens(food_items, raw_text):
 
         # Check raw text against also_check entries (contextual match)
         for context_item in also_check:
-            if context_item.lower() in raw_lower:
+            if re.search(r'\b' + re.escape(context_item.lower()) + r'\b', raw_lower):
                 warn_key = (allergen_lower, context_item.lower())
                 if warn_key not in seen:
                     seen.add(warn_key)
@@ -99,54 +104,21 @@ def check_meal_allergens(food_items, raw_text):
                         'message': f"ALLERGY WARNING: {context_item} may contain {allergen_lower}",
                     })
 
-    # Sort by severity (high first)
-    severity_order = {'high': 0, 'moderate': 1, 'low': 2}
+    # Add info-level warnings for unrecognized allergens
+    for allergen in unrecognized:
+        warnings.append({
+            'allergen': allergen.lower(),
+            'trigger': allergen,
+            'match_type': 'unrecognized',
+            'severity': 'info',
+            'message': f"NOTE: \"{allergen}\" is not in the allergen database -- cannot check for it",
+        })
+
+    # Sort by severity (high first, info last)
+    severity_order = {'high': 0, 'moderate': 1, 'low': 2, 'info': 3}
     warnings.sort(key=lambda w: severity_order.get(w['severity'], 9))
 
     return warnings
-
-
-def check_single_food(food_name, allergens=None):
-    """
-    Check a single food name against specific allergens or user allergens.
-    Used by meal planner for template filtering.
-
-    Args:
-        food_name: name of food to check
-        allergens: list of allergens to check against (None = use user profile)
-
-    Returns:
-        list of matching allergen names
-    """
-    if allergens is None:
-        try:
-            from dietary_profile import get_allergies
-        except ImportError:
-            from scripts.dietary_profile import get_allergies
-        allergens = get_allergies()
-
-    if not allergens:
-        return []
-
-    allergen_map = load_allergen_map()
-    matches = []
-    food_lower = food_name.lower()
-
-    for allergen in allergens:
-        allergen_lower = allergen.lower()
-        if allergen_lower not in allergen_map:
-            continue
-
-        entry = allergen_map[allergen_lower]
-        keywords = entry.get('keywords', [])
-        also_check = entry.get('also_check', [])
-
-        for keyword in keywords + also_check:
-            if keyword.lower() in food_lower:
-                matches.append(allergen_lower)
-                break
-
-    return matches
 
 
 def format_warnings(warnings):

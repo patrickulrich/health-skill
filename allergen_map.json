@@ -43,5 +43,30 @@
     "keywords": ["sesame", "tahini", "hummus"],
     "also_check": ["sesame oil", "sesame seeds"],
     "severity": "moderate"
+  },
+  "mustard": {
+    "keywords": ["mustard", "dijon", "mustard seed", "mustard powder"],
+    "also_check": ["honey mustard", "mustard greens", "vinaigrette"],
+    "severity": "moderate"
+  },
+  "celery": {
+    "keywords": ["celery", "celeriac", "celery seed", "celery salt"],
+    "also_check": ["bloody mary", "waldorf salad", "soup stock", "bouillon"],
+    "severity": "moderate"
+  },
+  "lupin": {
+    "keywords": ["lupin", "lupini", "lupine", "lupin flour", "lupin beans"],
+    "also_check": [],
+    "severity": "moderate"
+  },
+  "mollusks": {
+    "keywords": ["squid", "octopus", "snail", "escargot", "calamari", "cuttlefish"],
+    "also_check": ["takoyaki", "paella"],
+    "severity": "moderate"
+  },
+  "corn": {
+    "keywords": ["corn", "cornmeal", "cornstarch", "corn syrup", "polenta", "grits", "hominy", "masa"],
+    "also_check": ["tortilla", "tamale", "corn chips", "popcorn", "cornbread"],
+    "severity": "moderate"
   }
 }

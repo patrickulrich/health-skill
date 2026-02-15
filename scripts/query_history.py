@@ -57,19 +57,21 @@ def classify_query(text):
         result['type'] = 'last_workout'
     elif re.search(r'\b(?:how many|count|times)\b', text_lower):
         result['type'] = 'count'
-    elif re.search(r'\b(?:trend|progress|trending|progressing)\b', text_lower):
+    elif re.search(r'\b(?:trend|progress|trending|progressing|sleep|steps|heart rate|weight|calories burned)\b', text_lower):
         result['type'] = 'trend'
-    elif re.search(r'\b(?:sleep|steps|heart rate|weight|calories burned)\b', text_lower):
-        result['type'] = 'trend'
-        # Extract Fitbit metric
+
+    # Extract Fitbit metric for trend queries
+    if result['type'] == 'trend':
         if 'sleep' in text_lower:
-            result['metric'] = 'sleep'
+            result['metric'] = 'sleep_hours'
         elif 'step' in text_lower:
             result['metric'] = 'steps'
         elif 'heart' in text_lower:
             result['metric'] = 'resting_hr'
         elif 'weight' in text_lower:
             result['metric'] = 'weight'
+        elif 'calories' in text_lower:
+            result['metric'] = 'calories_burned'
 
     # Extract timeframe
     if 'this week' in text_lower:
@@ -78,8 +80,11 @@ def classify_query(text):
         result['timeframe'] = 'month'
     elif 'last week' in text_lower:
         result['timeframe'] = 'last_week'
-    elif match := re.search(r'last\s+(\d+)\s+(?:days?|weeks?)', text_lower):
-        result['timeframe'] = f"last_{match.group(1)}_days"
+    elif match := re.search(r'last\s+(\d+)\s+(days?|weeks?)', text_lower):
+        n = int(match.group(1))
+        if 'week' in match.group(2):
+            n *= 7
+        result['timeframe'] = f"last_{n}_days"
 
     return result
 
@@ -275,7 +280,7 @@ def _timeframe_to_days(timeframe):
     if timeframe == 'week':
         return 7
     elif timeframe == 'last_week':
-        return 14
+        return 7
     elif timeframe == 'month':
         return 30
     elif timeframe and 'days' in timeframe:

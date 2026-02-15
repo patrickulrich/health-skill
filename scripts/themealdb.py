@@ -17,8 +17,10 @@ sys.path.insert(0, SCRIPT_DIR)
 try:
     from urllib.request import urlopen, Request
     from urllib.error import URLError
+    from urllib.parse import quote_plus
 except ImportError:
     urlopen = None
+    quote_plus = None
 
 API_BASE = 'https://www.themealdb.com/api/json/v1/1'
 _TIMEOUT = 5  # seconds
@@ -39,7 +41,7 @@ def _fetch(endpoint):
 
 def search_meals(query):
     """Search meals by name. Returns list of meal dicts or empty list."""
-    data = _fetch(f'search.php?s={query}')
+    data = _fetch(f'search.php?s={quote_plus(query)}')
     if data and data.get('meals'):
         return data['meals']
     return []
@@ -47,7 +49,7 @@ def search_meals(query):
 
 def filter_by_cuisine(area):
     """Filter meals by cuisine/area (e.g., 'American', 'Italian')."""
-    data = _fetch(f'filter.php?a={area}')
+    data = _fetch(f'filter.php?a={quote_plus(area)}')
     if data and data.get('meals'):
         return data['meals']
     return []
@@ -55,7 +57,7 @@ def filter_by_cuisine(area):
 
 def filter_by_category(category):
     """Filter meals by category (e.g., 'Chicken', 'Seafood', 'Vegetarian')."""
-    data = _fetch(f'filter.php?c={category}')
+    data = _fetch(f'filter.php?c={quote_plus(category)}')
     if data and data.get('meals'):
         return data['meals']
     return []
@@ -63,7 +65,7 @@ def filter_by_category(category):
 
 def filter_by_ingredient(ingredient):
     """Filter meals by main ingredient."""
-    data = _fetch(f'filter.php?i={ingredient}')
+    data = _fetch(f'filter.php?i={quote_plus(ingredient)}')
     if data and data.get('meals'):
         return data['meals']
     return []

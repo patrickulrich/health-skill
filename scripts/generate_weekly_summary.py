@@ -155,8 +155,10 @@ def generate_exercise_breakdown(dates):
     for name, ex in pr_data['exercises'].items():
         if ex.get('pr_weight_date') in dates:
             prs_this_week.append(f"- {name}: {ex['pr_weight']} lbs (weight PR)")
-        elif ex.get('pr_volume_date') in dates:
+        if ex.get('pr_volume_date') in dates:
             prs_this_week.append(f"- {name}: {ex['pr_volume']:,} lbs total (volume PR)")
+        if ex.get('pr_reps_date') in dates:
+            prs_this_week.append(f"- {name}: {ex['pr_reps']} reps (reps PR)")
 
     if prs_this_week:
         lines.append("\n**PRs this week:**")

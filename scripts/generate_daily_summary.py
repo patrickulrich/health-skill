@@ -45,7 +45,20 @@ def load_fitbit_data(date):
             'resting_hr': None,
             'sleep_hours': 0,
             'weight': None,
-            'distance': 0
+            'distance': 0,
+            'floors': 0,
+            'elevation': 0,
+            'minutes_sedentary': 0,
+            'minutes_lightly_active': 0,
+            'minutes_fairly_active': 0,
+            'minutes_very_active': 0,
+            'hrv_rmssd': None,
+            'body_fat': None,
+            'bmi': None,
+            'sleep_efficiency': None,
+            'hr_zones': None,
+            'sleep_stages': None,
+            'fitbit_activities': [],
         }
 
         # Steps - may be stringified JSON
@@ -75,20 +88,39 @@ def load_fitbit_data(date):
                 heart_data = json.loads(heart_data)
             if 'activities-heart' in heart_data:
                 hr_list = heart_data['activities-heart']
-                if hr_list and 'value' in hr_list[0] and 'restingHeartRate' in hr_list[0]['value']:
-                    result['resting_hr'] = hr_list[0]['value']['restingHeartRate']
+                if hr_list and 'value' in hr_list[0]:
+                    if 'restingHeartRate' in hr_list[0]['value']:
+                        result['resting_hr'] = hr_list[0]['value']['restingHeartRate']
+                    # Heart rate zones (Fat Burn, Cardio, Peak minutes)
+                    zones = hr_list[0]['value'].get('heartRateZones', [])
+                    if zones:
+                        result['hr_zones'] = {}
+                        for zone in zones:
+                            name = zone.get('name', '')
+                            if name:
+                                result['hr_zones'][name] = zone.get('minutes', 0)
 
         # Sleep - may be stringified JSON
         if 'sleep' in data:
             sleep_data = data['sleep']
             if isinstance(sleep_data, str):
                 sleep_data = json.loads(sleep_data)
-            if 'sleep' in sleep_data:
-                sleep_list = sleep_data['sleep']
-                if sleep_list:
-                    duration = sleep_list[0].get('duration', 0)
-                    # Convert milliseconds to hours
-                    result['sleep_hours'] = round(duration / 3600000, 1)
+            # Use summary.totalMinutesAsleep for accurate total across all sessions
+            summary = sleep_data.get('summary', {})
+            total_minutes = summary.get('totalMinutesAsleep', 0)
+            if total_minutes:
+                result['sleep_hours'] = round(total_minutes / 60, 1)
+            # Sleep stages breakdown from first (main) sleep session
+            sleep_list = sleep_data.get('sleep', [])
+            if sleep_list:
+                stages_summary = sleep_list[0].get('levels', {}).get('summary', {})
+                if stages_summary:
+                    result['sleep_stages'] = {
+                        'deep': stages_summary.get('deep', {}).get('minutes', 0),
+                        'light': stages_summary.get('light', {}).get('minutes', 0),
+                        'rem': stages_summary.get('rem', {}).get('minutes', 0),
+                        'wake': stages_summary.get('wake', {}).get('minutes', 0),
+                    }
 
         # Weight - may be stringified JSON
         if 'weight' in data:
@@ -109,6 +141,101 @@ def load_fitbit_data(date):
                 distance_list = distance_data['activities-distance']
                 if distance_list and 'value' in distance_list[0]:
                     result['distance'] = float(distance_list[0]['value'])
+
+        # Floors - may be stringified JSON
+        if 'floors' in data:
+            floors_data = data['floors']
+            if isinstance(floors_data, str):
+                floors_data = json.loads(floors_data)
+            if 'activities-floors' in floors_data:
+                floors_list = floors_data['activities-floors']
+                if floors_list and 'value' in floors_list[0]:
+                    result['floors'] = int(float(floors_list[0]['value']))
+
+        # Elevation - may be stringified JSON
+        if 'elevation' in data:
+            elevation_data = data['elevation']
+            if isinstance(elevation_data, str):
+                elevation_data = json.loads(elevation_data)
+            if 'activities-elevation' in elevation_data:
+                elevation_list = elevation_data['activities-elevation']
+                if elevation_list and 'value' in elevation_list[0]:
+                    result['elevation'] = float(elevation_list[0]['value'])
+
+        # Active minutes - may be stringified JSON
+        for data_key, json_key in [
+            ('minutes_sedentary', 'activities-minutesSedentary'),
+            ('minutes_lightly_active', 'activities-minutesLightlyActive'),
+            ('minutes_fairly_active', 'activities-minutesFairlyActive'),
+            ('minutes_very_active', 'activities-minutesVeryActive'),
+        ]:
+            if data_key in data:
+                am_data = data[data_key]
+                if isinstance(am_data, str):
+                    am_data = json.loads(am_data)
+                if json_key in am_data:
+                    am_list = am_data[json_key]
+                    if am_list and 'value' in am_list[0]:
+                        result[data_key] = int(float(am_list[0]['value']))
+
+        # HRV - from /all endpoint, average minute-level RMSSD readings
+        if 'hrv' in data:
+            hrv_data = data['hrv']
+            if isinstance(hrv_data, str):
+                hrv_data = json.loads(hrv_data)
+            if 'hrv' in hrv_data and hrv_data['hrv']:
+                minutes = hrv_data['hrv'][0].get('minutes', [])
+                if minutes:
+                    rmssd_values = [m['value']['rmssd'] for m in minutes
+                                    if 'value' in m and 'rmssd' in m.get('value', {})
+                                    and isinstance(m['value']['rmssd'], (int, float))]
+                    if rmssd_values:
+                        result['hrv_rmssd'] = round(sum(rmssd_values) / len(rmssd_values), 1)
+
+        # Body fat - may be stringified JSON
+        if 'body_fat' in data:
+            bf_data = data['body_fat']
+            if isinstance(bf_data, str):
+                bf_data = json.loads(bf_data)
+            if 'fat' in bf_data and bf_data['fat']:
+                result['body_fat'] = float(bf_data['fat'][0]['fat'])
+
+        # BMI - from weight response
+        if 'weight' in data:
+            weight_data_bmi = data['weight']
+            if isinstance(weight_data_bmi, str):
+                weight_data_bmi = json.loads(weight_data_bmi)
+            if 'weight' in weight_data_bmi and weight_data_bmi['weight']:
+                bmi = weight_data_bmi['weight'][0].get('bmi')
+                if bmi:
+                    result['bmi'] = float(bmi)
+
+        # Fitbit-logged activities (runs, bike rides, etc.)
+        if 'activities' in data:
+            activities_data = data['activities']
+            if isinstance(activities_data, str):
+                activities_data = json.loads(activities_data)
+            activity_list = activities_data.get('activities', [])
+            if activity_list:
+                for act in activity_list:
+                    activity_info = {
+                        'name': act.get('activityName', 'Unknown'),
+                        'calories': act.get('calories', 0),
+                        'duration_min': round(act.get('duration', 0) / 60000, 1),
+                        'distance': act.get('distance', 0),
+                        'distance_unit': act.get('distanceUnit', ''),
+                    }
+                    result['fitbit_activities'].append(activity_info)
+
+        # Sleep efficiency
+        if 'sleep' in data:
+            sleep_data_eff = data['sleep']
+            if isinstance(sleep_data_eff, str):
+                sleep_data_eff = json.loads(sleep_data_eff)
+            if 'sleep' in sleep_data_eff and sleep_data_eff['sleep']:
+                efficiency = sleep_data_eff['sleep'][0].get('efficiency')
+                if efficiency:
+                    result['sleep_efficiency'] = int(efficiency)
 
         return result
 
@@ -191,6 +318,11 @@ def parse_diet_log(date):
             if hydration_match:
                 result['hydration'] = int(hydration_match.group(1))
 
+        # Extract allergen warnings (written by log_meal_to_file as "- ALLERGY WARNING: ...")
+        allergen_warnings = re.findall(r'-\s*ALLERGY WARNING:\s*(.+)', content)
+        if allergen_warnings:
+            result['allergen_warnings'] = allergen_warnings
+
         # Count meals
         meal_types = re.findall(r'###\s*(Breakfast|Lunch|Dinner|Snack)', content)
         result['meals'] = meal_types
@@ -224,7 +356,9 @@ def parse_workout_log(date):
             'workout_sessions': 0,
             'resistance_volume': 0,
             'cardio_minutes': 0,
-            'intensity': None
+            'intensity': None,
+            'total_reps': 0,
+            'exercises': [],
         }
 
         # Bug 5 fix: Find workout sections with full body content (not just header)
@@ -232,73 +366,86 @@ def parse_workout_log(date):
         result['workout_sessions'] = len(workout_sections)
 
         for section in workout_sections:
-            # Parse exercises
-            # Look for resistance training (sets, reps, weight)
-            # Bug 2 fix: Make weight portion a capturing group so group(2) works
-            exercise_pattern = r'^(?:\d+\.\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*(@\s*\d+\.?\d*\s*(?:lbs?|pounds?|kg)?)?'
+            # Parse individual exercises from numbered list format:
+            # 1. Exercise Name
+            #    Count: 60
+            #    Sets: 3
+            #    Reps: 10
+            #    Weight: 225 lbs
+            exercise_blocks = re.split(r'\n(?=\d+\.\s)', section)
+            for block in exercise_blocks:
+                ex_match = re.match(r'\d+\.\s+(.+)', block)
+                if not ex_match:
+                    continue
 
-            matches = re.finditer(exercise_pattern, section, re.IGNORECASE | re.MULTILINE)
+                exercise_name = normalize_exercise_name(ex_match.group(1).strip())
+                ex_info = {'name': exercise_name}
 
-            for match in matches:
-                exercise_name = normalize_exercise_name(match.group(1).strip())
-                weight_info = match.group(2) or ""
+                # Extract Count (bodyweight exercises)
+                count_match = re.search(r'Count:\s*(\d+)', block)
+                if count_match:
+                    ex_info['count'] = int(count_match.group(1))
+                    result['total_reps'] += ex_info['count']
 
-                # Extract sets
+                # Extract Sets
                 sets = 1
-                sets_match = re.search(r'(\d+)\s*sets', section, re.IGNORECASE)
+                sets_match = re.search(r'Sets:\s*(\d+)', block)
                 if sets_match:
                     sets = int(sets_match.group(1))
+                    ex_info['sets'] = sets
 
-                # Extract reps
+                # Extract Reps
                 reps = 0
-                reps_match = re.search(r'(\d+)\s*reps', section, re.IGNORECASE)
+                reps_match = re.search(r'Reps:\s*(\d+)', block)
                 if reps_match:
                     reps = int(reps_match.group(1))
+                    ex_info['reps'] = reps
+                    result['total_reps'] += sets * reps
 
-                # Parse weight
-                weight = None
-                weight_lbs = None
-                if weight_info:
-                    weight_match = re.search(r'(\d+\.?\d*)', weight_info)
-                    if weight_match:
-                        weight_val = float(weight_match.group(1))
-                        if 'kg' in weight_info.lower():
-                            weight = f"{weight_val} kg"
-                        else:
-                            weight_lbs = weight_val
-                            weight = f"{weight_val:.1f} lbs"
+                # Extract Weight
+                weight_match = re.search(r'Weight:\s*(\d+\.?\d*)\s*(lbs?|kg)', block)
+                if weight_match:
+                    weight_val = float(weight_match.group(1))
+                    unit = weight_match.group(2)
+                    ex_info['weight'] = weight_val
+                    ex_info['weight_unit'] = unit
+                    weight_lbs = weight_val * 2.205 if 'kg' in unit else weight_val
+                    result['resistance_volume'] += sets * reps * weight_lbs
 
-                # Calculate volume for resistance training (sets x reps x weight in lbs)
-                volume = 0
-                if weight_lbs:
-                    volume = sets * reps * weight_lbs
-                    result['resistance_volume'] += volume
+                result['exercises'].append(ex_info)
 
         # Extract cardio (look for distance, duration)
-        cardio_keywords = ['run', 'jog', 'bike', 'cycle', 'swim', 'walk', 'cardio', 'elliptical']
-        if any(keyword in content.lower() for keyword in cardio_keywords):
-            # Bug 3 fix: Use re.finditer instead of re.findall so we get match objects
-            duration_pattern = r'(\d+)\s*(min|minutes?|hour|hours?|h|m)\b'
-            duration_matches = re.finditer(duration_pattern, content)
-
-            for match in duration_matches:
+        cardio_keywords = ['run', 'ran', 'running', 'jog', 'jogged', 'jogging',
+                           'bike', 'biked', 'biking', 'cycle', 'cycled', 'cycling',
+                           'swim', 'swam', 'swimming', 'walk', 'walked', 'walking',
+                           'cardio', 'elliptical']
+        if any(re.search(r'\b' + re.escape(keyword) + r'\b', content.lower()) for keyword in cardio_keywords):
+            # Only take the first duration match, skipping pace-style patterns (e.g. "5 min/km")
+            duration_pattern = r'(\d+)\s*(min|minutes?|hour|hours?|h)\b'
+            for match in re.finditer(duration_pattern, content):
+                # Skip pace patterns like "5 min/km" or "6 min/mi"
+                after = content[match.end():match.end()+10]
+                if re.match(r'\s*/\s*(?:km|mi|mile)', after):
+                    continue
                 unit = match.group(2).lower()
                 duration_val = int(match.group(1))
                 if unit in ('hour', 'hours', 'h'):
                     result['cardio_minutes'] += duration_val * 60
                 else:
                     result['cardio_minutes'] += duration_val
+                break  # Only take the first (primary) duration
 
-        # Detect intensity
-        intensity_keywords = {
-            'light': ['light', 'easy', 'warmup', 'recovery'],
-            'moderate': ['moderate', 'normal', 'maintain'],
-            'hard': ['hard', 'intense', 'heavy', 'max', 'failure', 'failed']
-        }
+        # Detect intensity (highest-to-lowest priority so "light warmup max effort" → Max Effort)
+        intensity_keywords = [
+            ('Max Effort', ['max', 'failure', 'failed', 'all-out', '100%']),
+            ('Hard', ['hard', 'intense', 'heavy']),
+            ('Moderate', ['moderate', 'normal', 'maintain']),
+            ('Light', ['light', 'easy', 'warmup', 'recovery']),
+        ]
 
-        for intensity, keywords in intensity_keywords.items():
+        for intensity, keywords in intensity_keywords:
             if any(keyword in content.lower() for keyword in keywords):
-                result['intensity'] = intensity.title()
+                result['intensity'] = intensity
                 break
 
         return result
@@ -324,6 +471,8 @@ def assess_protein(protein, weight):
     """Assess protein intake based on weight and configured protein_per_kg."""
     if weight:
         target = int(weight * GOALS['protein_per_kg'])
+        if target <= 0:
+            return "N/A"
         percentage = int((protein / target) * 100)
 
         if percentage >= 125:
@@ -385,9 +534,11 @@ def generate_coach_notes(fitbit, diet, workout, date=None):
 
     # Diet strengths
     if diet and diet['protein'] > protein_target:
-        notes['strengths'].append(f"Excellent protein intake ({diet['protein']}g)")
+        notes['strengths'].append(f"Great job on protein! {diet['protein']}g exceeds your {protein_target}g target")
     if diet and diet['fiber'] >= 30:
-        notes['strengths'].append(f"Great fiber intake ({diet['fiber']}g)")
+        notes['strengths'].append(f"Excellent fiber intake ({diet['fiber']}g) - keep it up!")
+    if diet and diet.get('sodium', 0) > 0 and diet['sodium'] <= sodium_limit * 0.7:
+        notes['strengths'].append(f"Great sodium control ({diet['sodium']}mg - well under {sodium_limit:,}mg limit)")
     if diet and diet.get('hydration', 0) >= 6:
         notes['strengths'].append(f"Good hydration ({diet['hydration']} beverages)")
 
@@ -402,14 +553,29 @@ def generate_coach_notes(fitbit, diet, workout, date=None):
             notes['strengths'].append(f"High training volume ({workout['resistance_volume']:,} lbs)")
 
     # Fitness strengths (from Fitbit)
-    if fitbit and fitbit['steps'] >= step_good:
-        notes['strengths'].append(f"Good movement ({fitbit['steps']} steps)")
+    if fitbit and fitbit['steps'] >= step_target:
+        notes['strengths'].append(f"Crushed your step goal! {fitbit['steps']:,} steps (target: {step_target:,})")
+    elif fitbit and fitbit['steps'] >= step_good:
+        notes['strengths'].append(f"Good movement ({fitbit['steps']:,} steps)")
     if fitbit and fitbit['sleep_hours'] >= sleep_target:
         notes['strengths'].append(f"Solid sleep ({fitbit['sleep_hours']}h)")
+    if fitbit:
+        active_total = fitbit.get('minutes_fairly_active', 0) + fitbit.get('minutes_very_active', 0)
+        if active_total >= 30:
+            notes['strengths'].append(f"Good active minutes ({active_total} min fairly/very active)")
+        if fitbit.get('hrv_rmssd') and fitbit['hrv_rmssd'] >= 50:
+            notes['strengths'].append(f"Strong HRV ({fitbit['hrv_rmssd']} ms RMSSD)")
+
+    # Allergen warnings (highest priority)
+    if diet and diet.get('allergen_warnings'):
+        for warning in diet['allergen_warnings']:
+            notes['improvements'].insert(0, f"ALLERGEN ALERT: {warning}")
 
     # Diet improvements
     if diet and diet['sodium'] > sodium_limit:
         notes['improvements'].append(f"High sodium ({diet['sodium']}mg - limit is {sodium_limit:,}mg)")
+    if diet and 0 < diet.get('fiber', 0) < GOALS.get('fiber_target_g', 38):
+        notes['improvements'].append(f"Low fiber ({diet['fiber']}g - aim for {GOALS.get('fiber_target_g', 38)}g+)")
     if diet and diet['carbs'] > 250:
         notes['improvements'].append(f"High carbs ({diet['carbs']}g - consider reducing)")
     if fitbit and fitbit['steps'] < int(step_target * 0.5):
@@ -418,6 +584,12 @@ def generate_coach_notes(fitbit, diet, workout, date=None):
         notes['improvements'].append(f"Low sleep ({fitbit['sleep_hours']}h - aim for {sleep_target}+ hours)")
     if diet and 0 < diet.get('hydration', 0) < 4:
         notes['improvements'].append(f"Low hydration ({diet['hydration']} beverages - aim for 6+)")
+    if fitbit:
+        active_total = fitbit.get('minutes_fairly_active', 0) + fitbit.get('minutes_very_active', 0)
+        if active_total < 15 and fitbit['steps'] >= int(step_target * 0.5):
+            notes['improvements'].append(f"Low active minutes ({active_total} min - aim for 30+ fairly/very active)")
+        if fitbit.get('hrv_rmssd') and fitbit['hrv_rmssd'] < 25:
+            notes['improvements'].append(f"Low HRV ({fitbit['hrv_rmssd']} ms) - prioritize recovery and sleep")
     if not diet:
         notes['improvements'].append("No meals logged today - please track your food")
     # Bug 7 fix: Single check for no exercise (removed duplicate block)
@@ -448,8 +620,10 @@ def generate_coach_notes(fitbit, diet, workout, date=None):
             for name, ex in pr_data.get('exercises', {}).items():
                 if ex.get('pr_weight_date') == date:
                     notes['strengths'].append(f"New weight PR on {name}: {ex['pr_weight']} lbs!")
-                elif ex.get('pr_volume_date') == date:
+                if ex.get('pr_volume_date') == date:
                     notes['strengths'].append(f"New volume PR on {name}!")
+                if ex.get('pr_reps_date') == date:
+                    notes['strengths'].append(f"New reps PR on {name}: {ex['pr_reps']} reps!")
         except Exception:
             pass
 
@@ -487,9 +661,13 @@ def generate_coach_notes(fitbit, diet, workout, date=None):
                 if any(r in restrictions for r in ['vegetarian', 'vegan']):
                     notes['tomorrow_focus'].append(
                         f"Plant protein sources: tofu, lentils, beans, tempeh (aim for {protein_target}g)")
-                if 'keto' in restrictions and diet['carbs'] > 50:
-                    notes['improvements'].append(
-                        f"Carbs at {diet['carbs']}g -- keto target is <50g")
+
+            # Keto compliance feedback
+            if 'keto' in restrictions and diet['carbs'] <= 50:
+                notes['strengths'].append(f"Excellent keto compliance ({diet['carbs']}g carbs -- under 50g target)")
+            if 'keto' in restrictions and diet['carbs'] > 50:
+                notes['improvements'].append(
+                    f"Carbs at {diet['carbs']}g -- keto target is <50g")
     except ImportError:
         pass
 
@@ -503,13 +681,6 @@ def generate_summary(date):
     fitbit = load_fitbit_data(date)
     diet = parse_diet_log(date)
     workout = parse_workout_log(date)
-
-    # Calculate net calories
-    net_calories = 0
-    if fitbit and diet:
-        net_calories = diet['calories_consumed'] - fitbit['calories_burned']
-    elif diet:
-        net_calories = diet['calories_consumed']
 
     # Build summary
     lines = [f"\n## Daily Health Summary - {date}"]
@@ -538,7 +709,12 @@ def generate_summary(date):
             lines.append(f"- **Fiber**: {diet['fiber']}g (target: {fiber_target}g)")
         if diet.get('hydration', 0) > 0:
             lines.append(f"- **Hydration**: {diet['hydration']} beverages")
-        lines.append(f"- **Meals**: {', '.join(set(diet['meals']))}")
+        lines.append(f"- **Meals**: {', '.join(dict.fromkeys(diet['meals']))}")
+        if diet.get('allergen_warnings'):
+            lines.append("")
+            lines.append("**Allergen Warnings:**")
+            for warning in diet['allergen_warnings']:
+                lines.append(f"- {warning}")
     else:
         lines.append("- No meals logged today")
 
@@ -549,31 +725,75 @@ def generate_summary(date):
         lines.append(f"- **Intensity**: {workout['intensity']}")
         if workout['resistance_volume'] > 0:
             lines.append(f"- **Resistance volume**: {workout['resistance_volume']:,} lbs")
+        if workout.get('total_reps', 0) > 0:
+            lines.append(f"- **Total reps**: {workout['total_reps']:,}")
+        if workout.get('exercises'):
+            exercise_names = [ex['name'] for ex in workout['exercises']]
+            lines.append(f"- **Exercises**: {', '.join(exercise_names)}")
         if workout['cardio_minutes'] > 0:
             lines.append(f"- **Cardio time**: {workout['cardio_minutes']} minutes")
     else:
         lines.append("- No exercise logged today")
 
+    # Fitbit-tracked activities
+    if fitbit and fitbit.get('fitbit_activities'):
+        lines.append("\n**Fitbit-tracked activities:**")
+        for act in fitbit['fitbit_activities']:
+            parts = [act['name']]
+            if act.get('duration_min'):
+                parts.append(f"{act['duration_min']} min")
+            if act.get('distance'):
+                parts.append(f"{act['distance']} {act.get('distance_unit', '')}")
+            if act.get('calories'):
+                parts.append(f"{act['calories']} kcal")
+            lines.append(f"- {' | '.join(parts)}")
+
     # Fitness overview
     lines.append("\n### Fitness Overview")
     if fitbit:
         lines.append(f"- **Steps**: {fitbit['steps']:,} ({assess_movement(fitbit['steps'])})")
+        lines.append(f"- **Distance**: {fitbit['distance']} km")
+        if fitbit['floors']:
+            lines.append(f"- **Floors**: {fitbit['floors']}")
         lines.append(f"- **Calories burned**: {fitbit['calories_burned']:,} kcal")
         if fitbit['resting_hr']:
             lines.append(f"- **Resting heart rate**: {fitbit['resting_hr']} bpm")
-        lines.append(f"- **Sleep**: {fitbit['sleep_hours']}h ({assess_sleep(fitbit['sleep_hours'])})")
+        if fitbit.get('hr_zones'):
+            zone_parts = []
+            for zone_name in ['Fat Burn', 'Cardio', 'Peak']:
+                mins = fitbit['hr_zones'].get(zone_name, 0)
+                if mins > 0:
+                    zone_parts.append(f"{zone_name}: {mins} min")
+            if zone_parts:
+                lines.append(f"- **HR zones**: {', '.join(zone_parts)}")
+        if fitbit.get('hrv_rmssd'):
+            lines.append(f"- **HRV (RMSSD)**: {fitbit['hrv_rmssd']} ms")
+        active_total = fitbit['minutes_fairly_active'] + fitbit['minutes_very_active']
+        lines.append(f"- **Active minutes**: {active_total} min ({fitbit['minutes_fairly_active']} fairly + {fitbit['minutes_very_active']} very)")
+        lines.append(f"- **Sedentary**: {fitbit['minutes_sedentary']} min")
+        sleep_str = f"{fitbit['sleep_hours']}h ({assess_sleep(fitbit['sleep_hours'])})"
+        if fitbit.get('sleep_efficiency'):
+            sleep_str += f", {fitbit['sleep_efficiency']}% efficiency"
+        lines.append(f"- **Sleep**: {sleep_str}")
+        if fitbit.get('sleep_stages'):
+            stages = fitbit['sleep_stages']
+            lines.append(f"  - Deep: {stages['deep']} min, Light: {stages['light']} min, REM: {stages['rem']} min, Wake: {stages['wake']} min")
         if fitbit['weight']:
-            lines.append(f"- **Weight**: {fitbit['weight']} kg")
-        lines.append(f"- **Distance**: {fitbit['distance']} km")
+            weight_str = f"{fitbit['weight']} kg"
+            if fitbit.get('bmi'):
+                weight_str += f" (BMI {fitbit['bmi']:.1f})"
+            lines.append(f"- **Weight**: {weight_str}")
+        if fitbit.get('body_fat'):
+            lines.append(f"- **Body fat**: {fitbit['body_fat']:.1f}%")
     else:
         lines.append("- No Fitbit data available")
 
     # Net balance
     lines.append("\n### Net Balance")
     if fitbit and diet and workout:
-        total_burned = fitbit['calories_burned'] + (workout['cardio_minutes'] * CARDIO_KCAL_PER_MIN if workout['cardio_minutes'] else 0)
+        total_burned = fitbit['calories_burned']
         net_calories = diet['calories_consumed'] - total_burned
-        lines.append(f"- **Calorie balance**: {net_calories:+,} kcal (consumed - burned + workout)")
+        lines.append(f"- **Calorie balance**: {net_calories:+,} kcal (consumed - burned)")
         calorie_target = calculate_calorie_target()
         if calorie_target:
             lines.append(f"- **Calorie target**: {calorie_target:,} kcal/day")
@@ -604,8 +824,8 @@ def generate_summary(date):
 
     return '\n'.join(lines)
 
-def write_summary(date, summary):
-    """Write summary to dedicated summaries folder."""
+def append_to_log(date, summary):
+    """Append summary to dedicated summaries folder."""
     summaries_dir = os.path.join(os.path.dirname(FITNESS_DIR), 'summaries')
     summary_file = os.path.join(summaries_dir, f'{date}.md')
 
@@ -631,7 +851,7 @@ def main():
     print(summary)
     print()
 
-    write_summary(date, summary)
+    append_to_log(date, summary)
 
 if __name__ == '__main__':
     main()

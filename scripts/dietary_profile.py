@@ -223,6 +223,10 @@ def get_next_prompt():
 
     # Special case: allergies and health_conditions together on 1st interaction
     if should_prompt_preference('allergies') and should_prompt_preference('health_conditions'):
+        state['allergies_asked'] = True
+        state['health_conditions_asked'] = True
+        state['last_prompt_at'] = state.get('total_meals_logged', 0)
+        _save_state(state)
         return {
             'key': 'allergies_and_health',
             'question': (

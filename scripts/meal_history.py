@@ -110,7 +110,7 @@ def detect_cuisines_from_foods(foods):
     if not cuisine_map or not foods:
         return {}
 
-    food_names = [f['name'] if isinstance(f, dict) else str(f).lower() for f in foods]
+    food_names = [f['name'].lower() if isinstance(f, dict) else str(f).lower() for f in foods]
     all_text = ' '.join(food_names)
 
     detected = {}

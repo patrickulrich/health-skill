@@ -380,7 +380,7 @@ Saved meals are shortcuts for frequently eaten meals stored in `saved_meals.json
 
 **PR history:** pr_history.json (per-exercise PR and session history, auto-generated)
 
-**Allergen map:** allergen_map.json (9 allergens with food keywords and contextual matches)
+**Allergen map:** allergen_map.json (14 allergens with food keywords and contextual matches)
 
 **Meal templates:** meal_templates.json (~60 curated meals with macros, allergens, and tags)
 

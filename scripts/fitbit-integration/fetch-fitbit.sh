@@ -14,9 +14,7 @@ LOG_FILE="$WORKSPACE/fitbit-sync.log"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/.env"
 if [ -f "$ENV_FILE" ]; then
-    set -a
-    source "$ENV_FILE"
-    set +a
+    export $(grep -v '^#' "$ENV_FILE" | grep -v '^\s*$' | xargs)
 fi
 
 # Verify credentials are available
@@ -93,6 +91,18 @@ get_access_token() {
     jq -r '.access_token' "$TOKENS_FILE"
 }
 
+# Validate API response - returns empty JSON if response contains errors
+validate_response() {
+    local response="$1"
+    local endpoint="$2"
+    if echo "$response" | jq -e '.errors | length > 0' >/dev/null 2>&1; then
+        log "WARNING: API error for $endpoint: $(echo "$response" | jq -c '.errors')"
+        echo "{}"
+    else
+        echo "$response"
+    fi
+}
+
 # Fetch data
 fetch_data() {
     log "Fetching Fitbit data for $DATE..."
@@ -107,58 +117,74 @@ fetch_data() {
     # === CORE ACTIVITY DATA ===
     local steps=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/steps/date/$DATE/1d.json")
+    steps=$(validate_response "$steps" "steps")
 
     local calories=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/calories/date/$DATE/1d.json")
+    calories=$(validate_response "$calories" "calories")
 
     local distance=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/distance/date/$DATE/1d.json")
+    distance=$(validate_response "$distance" "distance")
 
     local floors=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/floors/date/$DATE/1d.json")
+    floors=$(validate_response "$floors" "floors")
 
     local elevation=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/elevation/date/$DATE/1d.json")
+    elevation=$(validate_response "$elevation" "elevation")
 
     # === ACTIVE MINUTES ===
     local minutes_sedentary=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/minutesSedentary/date/$DATE/1d.json")
+    minutes_sedentary=$(validate_response "$minutes_sedentary" "minutesSedentary")
 
     local minutes_lightly_active=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/minutesLightlyActive/date/$DATE/1d.json")
+    minutes_lightly_active=$(validate_response "$minutes_lightly_active" "minutesLightlyActive")
 
     local minutes_fairly_active=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/minutesFairlyActive/date/$DATE/1d.json")
+    minutes_fairly_active=$(validate_response "$minutes_fairly_active" "minutesFairlyActive")
 
     local minutes_very_active=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/minutesVeryActive/date/$DATE/1d.json")
+    minutes_very_active=$(validate_response "$minutes_very_active" "minutesVeryActive")
 
     # === HEART RATE ===
     local heart=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/heart/date/$DATE/1d.json")
+    heart=$(validate_response "$heart" "heart")
 
     # Heart rate intraday (per-minute breakdown)
     local heart_intraday=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/heart/date/$DATE/1d/1min.json")
+    heart_intraday=$(validate_response "$heart_intraday" "heart_intraday")
 
     # === HRV (Heart Rate Variability) ===
     local hrv=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/hrv/date/$DATE/all.json")
+    hrv=$(validate_response "$hrv" "hrv")
 
     # === SLEEP ===
     local sleep=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1.2/user/-/sleep/date/$DATE.json")
+    sleep=$(validate_response "$sleep" "sleep")
 
     # === BODY COMPOSITION ===
     local weight=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/body/log/weight/date/$DATE/1m.json")
+    weight=$(validate_response "$weight" "weight")
 
     local body_fat=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/body/log/fat/date/$DATE/1m.json")
+    body_fat=$(validate_response "$body_fat" "body_fat")
 
     # === ACTIVITIES ===
     local activities=$(curl -s -H "Authorization: Bearer $access_token" \
-        "https://api.fitbit.com/1/user/-/activities/list.json?afterDate=$DATE&sort=asc&limit=20&offset=0")
+        "https://api.fitbit.com/1/user/-/activities/date/$DATE.json")
+    activities=$(validate_response "$activities" "activities")
 
     # === COMBINE AND SAVE RAW JSON ===
     local combined=$(jq -n \
@@ -227,7 +253,7 @@ fetch_data() {
     local bmi_value=$(echo "$weight" | jq -r '.weight[0].bmi // empty')
     
     # HRV - get daily average if available
-    local hrv_daily_rmssd=$(echo "$hrv" | jq -r '.hrv[0].value.dailyRmssd // empty')
+    local hrv_daily_rmssd=$(echo "$hrv" | jq -r '[.hrv[0].minutes[]?.value.rmssd] | if length > 0 then (add / length * 10 | round / 10) else empty end' 2>/dev/null)
     
     # Sleep score (if available in Premium)
     local sleep_score=$(echo "$sleep" | jq -r '.sleep[0].efficiency // empty')

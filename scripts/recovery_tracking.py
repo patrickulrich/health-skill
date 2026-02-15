@@ -86,7 +86,7 @@ def get_recovery_warnings(days_back=14, fitness_dir=None):
         if sorted_dates:
             last_date = datetime.strptime(sorted_dates[0], '%Y-%m-%d').date()
             days_since = (today - last_date).days
-            if days_since >= 7:
+            if days_since > 7:
                 warnings.append({
                     'muscle_group': muscle,
                     'days_since_last': days_since,
@@ -99,14 +99,21 @@ def get_recovery_warnings(days_back=14, fitness_dir=None):
             for j in range(len(sorted_dates) - 1):
                 d1 = datetime.strptime(sorted_dates[j], '%Y-%m-%d').date()
                 d2 = datetime.strptime(sorted_dates[j + 1], '%Y-%m-%d').date()
-                if (d1 - d2).days == 1:
+                diff = (d1 - d2).days
+                if diff == 0:
+                    warnings.append({
+                        'muscle_group': muscle,
+                        'days_since_last': 0,
+                        'warning_type': 'insufficient_recovery',
+                        'message': f"{muscle.title()} trained twice on {sorted_dates[j]} -- allow 48h recovery between sessions",
+                    })
+                elif diff == 1:
                     warnings.append({
                         'muscle_group': muscle,
                         'days_since_last': 0,
                         'warning_type': 'insufficient_recovery',
                         'message': f"{muscle.title()} trained on consecutive days ({sorted_dates[j+1]} and {sorted_dates[j]}) -- allow 48h recovery",
                     })
-                    break  # one warning per muscle is enough
 
     return warnings
 

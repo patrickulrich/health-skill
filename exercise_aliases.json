@@ -430,5 +430,41 @@
     "aliases": ["resistance band", "band", "bands", "resistance bands"],
     "muscle_groups": ["full body"],
     "type": "compound"
+  },
+  {
+    "canonical": "Mountain Climber",
+    "aliases": ["mountain climber", "mountain climbers"],
+    "muscle_groups": ["core", "cardio"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Leg Raise",
+    "aliases": ["leg raise", "leg raises", "lying leg raise", "lying leg raises"],
+    "muscle_groups": ["core"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "V-up",
+    "aliases": ["v-up", "v-ups", "v up", "v ups", "vup", "vups"],
+    "muscle_groups": ["core"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Jump Rope",
+    "aliases": ["jump rope", "jump ropes", "skipping rope", "skipping", "rope skipping"],
+    "muscle_groups": ["cardio", "calves"],
+    "type": "cardio"
+  },
+  {
+    "canonical": "Wall Sit",
+    "aliases": ["wall sit", "wall sits", "wall squat", "wall squats"],
+    "muscle_groups": ["quads", "glutes"],
+    "type": "bodyweight"
+  },
+  {
+    "canonical": "Hollow Hold",
+    "aliases": ["hollow hold", "hollow holds", "hollow body", "hollow body hold"],
+    "muscle_groups": ["core"],
+    "type": "bodyweight"
   }
 ]

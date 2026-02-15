@@ -26,7 +26,7 @@ BEVERAGE_KEYWORDS = [
 def is_beverage(name):
     """Check if a food name is a beverage."""
     name_lower = name.lower()
-    return any(bev in name_lower for bev in BEVERAGE_KEYWORDS)
+    return any(re.search(r'\b' + re.escape(bev) + r'\b', name_lower) for bev in BEVERAGE_KEYWORDS)
 
 
 def _load_saved_meals():
@@ -214,27 +214,27 @@ def parse_food_items(text):
                 return True
         return False
 
-    # First check for multi-word phrases
+    # First check for multi-word phrases (all occurrences)
     for phrase in food_phrases:
-        idx = text_lower.find(phrase)
-        if idx >= 0 and not _overlaps(idx, idx + len(phrase)):
-            before_context = text_lower[:idx]
-            quantity, unit = _extract_quantity_and_unit(before_context, phrase)
-            food_items.append((phrase, quantity, unit))
-            found_positions.append((idx, idx + len(phrase)))
-            # Mark as found so we don't also match the single word
-            for word in phrase.split():
-                if word in food_keywords:
-                    food_keywords.remove(word)
+        for match in re.finditer(re.escape(phrase), text_lower):
+            idx = match.start()
+            end = match.end()
+            if not _overlaps(idx, end):
+                before_context = text_lower[:idx]
+                quantity, unit = _extract_quantity_and_unit(before_context, phrase)
+                food_items.append((phrase, quantity, unit))
+                found_positions.append((idx, end))
 
-    # Then check for single keywords
+    # Then check for single keywords (all occurrences)
     for keyword in food_keywords:
-        idx = text_lower.find(keyword)
-        if idx >= 0 and not _overlaps(idx, idx + len(keyword)):
-            before_context = text_lower[:idx]
-            quantity, unit = _extract_quantity_and_unit(before_context, keyword)
-            food_items.append((keyword, quantity, unit))
-            found_positions.append((idx, idx + len(keyword)))
+        for match in re.finditer(re.escape(keyword), text_lower):
+            idx = match.start()
+            end = match.end()
+            if not _overlaps(idx, end):
+                before_context = text_lower[:idx]
+                quantity, unit = _extract_quantity_and_unit(before_context, keyword)
+                food_items.append((keyword, quantity, unit))
+                found_positions.append((idx, end))
 
     return food_items
 
@@ -251,8 +251,8 @@ def analyze_meal(text):
     saved_meals = _load_saved_meals()
     expanded = text
     for name, expansion in saved_meals.items():
-        if name in expanded.lower():
-            expanded = expanded.lower().replace(name, expansion, 1)
+        if re.search(r'\b' + re.escape(name) + r'\b', expanded, re.IGNORECASE):
+            expanded = re.sub(r'\b' + re.escape(name) + r'\b', expansion, expanded, flags=re.IGNORECASE)
             break
 
     food_items = parse_food_items(expanded)
@@ -350,6 +350,10 @@ def update_daily_totals(date=None):
     total_carbs = sum(int(m.group(1).replace(',', '')) for m in re.finditer(r'~([\d,]+)g carbs', content))
     total_fat = sum(int(m.group(1).replace(',', '')) for m in re.finditer(r'~([\d,]+)g fat', content))
 
+    # Sum sodium and fiber from per-meal entries
+    total_sodium = sum(int(m.group(1).replace(',', '')) for m in re.finditer(r'Sodium: ~([\d,]+)\s*mg', content))
+    total_fiber = sum(int(m.group(1).replace(',', '')) for m in re.finditer(r'Fiber: ~([\d,]+)g', content))
+
     # Count hydration from beverage lines
     total_beverages = sum(int(m.group(1)) for m in re.finditer(r'Hydration: (\d+) beverage', content))
 
@@ -360,6 +364,10 @@ def update_daily_totals(date=None):
         f"- Carbs: ~{total_carbs}g\n"
         f"- Fat: ~{total_fat}g\n"
     )
+    if total_sodium > 0:
+        totals_section += f"- Sodium: ~{total_sodium}mg\n"
+    if total_fiber > 0:
+        totals_section += f"- Fiber: ~{total_fiber}g\n"
     if total_beverages > 0:
         totals_section += f"- Hydration: {total_beverages} beverages\n"
 
