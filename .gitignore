@@ -19,6 +19,7 @@ meal_history_cache.json
 pr_history.json
 saved_meals.json
 saved_workouts.json
+dietary_profile_state.json
 
 # Claude Code auto-generated files
 **/CLAUDE.md

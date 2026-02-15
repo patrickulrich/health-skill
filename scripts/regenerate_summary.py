@@ -13,7 +13,7 @@ SKILL_DIR = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, SKILL_DIR)
 sys.path.insert(0, SCRIPT_DIR)
 
-from generate_daily_summary import generate_summary, append_to_log
+from generate_daily_summary import generate_summary, write_summary
 
 def main():
     if len(sys.argv) < 2:
@@ -34,8 +34,8 @@ def main():
     summary = generate_summary(date_str)
     print(summary)
     print()
-    append_to_log(date_str, summary)
-    print(f"Summary appended to diet log for {date_str}")
+    write_summary(date_str, summary)
+    print(f"Summary saved for {date_str}")
 
 if __name__ == '__main__':
     main()

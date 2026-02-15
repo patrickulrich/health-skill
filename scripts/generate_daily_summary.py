@@ -604,30 +604,22 @@ def generate_summary(date):
 
     return '\n'.join(lines)
 
-def append_to_log(date, summary):
-    """Append summary to fitness log file (contains Fitbit, diet, and workout data)."""
-    fitness_file = os.path.join(FITNESS_DIR, f'{date}.md')
+def write_summary(date, summary):
+    """Write summary to dedicated summaries folder."""
+    summaries_dir = os.path.join(os.path.dirname(FITNESS_DIR), 'summaries')
+    summary_file = os.path.join(summaries_dir, f'{date}.md')
 
     try:
-        # Read existing content and remove any existing summaries
-        with open(fitness_file, 'r', encoding='utf-8') as f:
-            content = f.read()
+        os.makedirs(summaries_dir, exist_ok=True)
 
-        # Find first summary section
-        first_summary_start = content.find('## Daily Health Summary')
-        if first_summary_start != -1:
-            # Keep only content before first summary
-            content = content[:first_summary_start]
-
-        # Append new summary
-        with open(fitness_file, 'w', encoding='utf-8') as f:
-            f.write(content)
+        # Write summary (overwrites any existing summary for this date)
+        with open(summary_file, 'w', encoding='utf-8') as f:
             f.write(summary)
             f.write('\n')
 
-        print(f"Summary appended to {fitness_file}")
+        print(f"Summary saved to {summary_file}")
     except Exception as e:
-        print(f"Error appending to log: {e}")
+        print(f"Error saving summary: {e}")
 
 def main():
     """Generate daily health summary."""
@@ -639,7 +631,7 @@ def main():
     print(summary)
     print()
 
-    append_to_log(date, summary)
+    write_summary(date, summary)
 
 if __name__ == '__main__':
     main()

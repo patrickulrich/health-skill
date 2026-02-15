@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Fitbit Data Fetch (Simple Bash Version)
-# Fetches data from Fitbit and logs to fitness files
+# Fitbit Data Fetch (Comprehensive Version)
+# Fetches all available data from Fitbit API and logs to fitness files
 
 # Configuration
 WORKSPACE="${HEALTH_SKILL_WORKSPACE:-$(dirname "$(dirname "$(dirname "$(dirname "$(cd "$(dirname "$0")" && pwd)")")")")}"
@@ -14,7 +14,9 @@ LOG_FILE="$WORKSPACE/fitbit-sync.log"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$(dirname "$(dirname "$SCRIPT_DIR")")/.env"
 if [ -f "$ENV_FILE" ]; then
-    export $(grep -v '^#' "$ENV_FILE" | grep -v '^\s*$' | xargs)
+    set -a
+    source "$ENV_FILE"
+    set +a
 fi
 
 # Verify credentials are available
@@ -100,20 +102,11 @@ fetch_data() {
     # Create directories
     mkdir -p "$FITBIT_DIR" "$FITNESS_DIR"
 
-    # Fetch data in parallel
     log "Fetching data..."
 
+    # === CORE ACTIVITY DATA ===
     local steps=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/steps/date/$DATE/1d.json")
-
-    local heart=$(curl -s -H "Authorization: Bearer $access_token" \
-        "https://api.fitbit.com/1/user/-/activities/heart/date/$DATE/1d.json")
-
-    local sleep=$(curl -s -H "Authorization: Bearer $access_token" \
-        "https://api.fitbit.com/1.2/user/-/sleep/date/$DATE.json")
-
-    local weight=$(curl -s -H "Authorization: Bearer $access_token" \
-        "https://api.fitbit.com/1/user/-/body/log/weight/date/$DATE/1m.json")
 
     local calories=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/calories/date/$DATE/1d.json")
@@ -121,38 +114,132 @@ fetch_data() {
     local distance=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/distance/date/$DATE/1d.json")
 
+    local floors=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/floors/date/$DATE/1d.json")
+
+    local elevation=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/elevation/date/$DATE/1d.json")
+
+    # === ACTIVE MINUTES ===
+    local minutes_sedentary=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/minutesSedentary/date/$DATE/1d.json")
+
+    local minutes_lightly_active=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/minutesLightlyActive/date/$DATE/1d.json")
+
+    local minutes_fairly_active=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/minutesFairlyActive/date/$DATE/1d.json")
+
+    local minutes_very_active=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/minutesVeryActive/date/$DATE/1d.json")
+
+    # === HEART RATE ===
+    local heart=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/heart/date/$DATE/1d.json")
+
+    # Heart rate intraday (per-minute breakdown)
+    local heart_intraday=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/activities/heart/date/$DATE/1d/1min.json")
+
+    # === HRV (Heart Rate Variability) ===
+    local hrv=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/hrv/date/$DATE/all.json")
+
+    # === SLEEP ===
+    local sleep=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1.2/user/-/sleep/date/$DATE.json")
+
+    # === BODY COMPOSITION ===
+    local weight=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/body/log/weight/date/$DATE/1m.json")
+
+    local body_fat=$(curl -s -H "Authorization: Bearer $access_token" \
+        "https://api.fitbit.com/1/user/-/body/log/fat/date/$DATE/1m.json")
+
+    # === ACTIVITIES ===
     local activities=$(curl -s -H "Authorization: Bearer $access_token" \
         "https://api.fitbit.com/1/user/-/activities/list.json?afterDate=$DATE&sort=asc&limit=20&offset=0")
 
-    # Combine and save raw JSON
+    # === COMBINE AND SAVE RAW JSON ===
     local combined=$(jq -n \
         --arg steps "$steps" \
-        --arg heart "$heart" \
-        --arg sleep "$sleep" \
-        --arg weight "$weight" \
         --arg calories "$calories" \
         --arg distance "$distance" \
+        --arg floors "$floors" \
+        --arg elevation "$elevation" \
+        --arg minutes_sedentary "$minutes_sedentary" \
+        --arg minutes_lightly_active "$minutes_lightly_active" \
+        --arg minutes_fairly_active "$minutes_fairly_active" \
+        --arg minutes_very_active "$minutes_very_active" \
+        --arg heart "$heart" \
+        --arg heart_intraday "$heart_intraday" \
+        --arg hrv "$hrv" \
+        --arg sleep "$sleep" \
+        --arg weight "$weight" \
+        --arg body_fat "$body_fat" \
         --arg activities "$activities" \
         --arg date "$DATE" \
-        '{date: $date, steps: $steps, heart: $heart, sleep: $sleep, weight: $weight, calories: $calories, distance: $distance, activities: $activities, fetchedAt: (now | todateiso8601)}')
+        '{
+            date: $date,
+            steps: $steps,
+            calories: $calories,
+            distance: $distance,
+            floors: $floors,
+            elevation: $elevation,
+            minutes_sedentary: $minutes_sedentary,
+            minutes_lightly_active: $minutes_lightly_active,
+            minutes_fairly_active: $minutes_fairly_active,
+            minutes_very_active: $minutes_very_active,
+            heart: $heart,
+            heart_intraday: $heart_intraday,
+            hrv: $hrv,
+            sleep: $sleep,
+            weight: $weight,
+            body_fat: $body_fat,
+            activities: $activities,
+            fetchedAt: (now | todateiso8601)
+        }')
 
     echo "$combined" | jq '.' > "$FITBIT_DIR/$DATE.json"
     log "Saved raw data to $FITBIT_DIR/$DATE.json"
 
-    # Extract values
+    # === EXTRACT VALUES FOR LOG ===
     local steps_value=$(echo "$steps" | jq -r '.["activities-steps"][0].value // "0"')
     local heart_resting=$(echo "$heart" | jq -r '.["activities-heart"][0].value.restingHeartRate // "N/A"')
-    # Sleep duration comes in milliseconds, convert to minutes
-    local sleep_ms=$(echo "$sleep" | jq -r '.sleep[0].duration // .summary.totalMinutes // 0')
-    local sleep_duration=$((sleep_ms / 60000))
-    local sleep_hours=$((sleep_duration / 60))
-    local sleep_minutes=$((sleep_duration % 60))
+    
+    # Sleep: sum all sleep sessions for total
+    local sleep_total_minutes=$(echo "$sleep" | jq -r '.summary.totalMinutesAsleep // 0')
+    local sleep_hours=$((sleep_total_minutes / 60))
+    local sleep_minutes=$((sleep_total_minutes % 60))
+    
     local weight_value=$(echo "$weight" | jq -r '.weight[0].weight // empty')
     local calories_value=$(echo "$calories" | jq -r '.["activities-calories"][0].value // "0"')
     local distance_value=$(echo "$distance" | jq -r '.["activities-distance"][0].value // "0"')
+    
+    # New fields
+    local floors_value=$(echo "$floors" | jq -r '.["activities-floors"][0].value // "0"')
+    local elevation_value=$(echo "$elevation" | jq -r '.["activities-elevation"][0].value // "0"')
+    local sedentary_value=$(echo "$minutes_sedentary" | jq -r '.["activities-minutesSedentary"][0].value // "0"')
+    local lightly_active_value=$(echo "$minutes_lightly_active" | jq -r '.["activities-minutesLightlyActive"][0].value // "0"')
+    local fairly_active_value=$(echo "$minutes_fairly_active" | jq -r '.["activities-minutesFairlyActive"][0].value // "0"')
+    local very_active_value=$(echo "$minutes_very_active" | jq -r '.["activities-minutesVeryActive"][0].value // "0"')
+    local body_fat_value=$(echo "$body_fat" | jq -r '.fat[0].fat // empty')
+    local bmi_value=$(echo "$weight" | jq -r '.weight[0].bmi // empty')
+    
+    # HRV - get daily average if available
+    local hrv_daily_rmssd=$(echo "$hrv" | jq -r '.hrv[0].value.dailyRmssd // empty')
+    
+    # Sleep score (if available in Premium)
+    local sleep_score=$(echo "$sleep" | jq -r '.sleep[0].efficiency // empty')
 
     # Update fitness log
-    update_fitness_log "$steps_value" "$heart_resting" "$sleep_hours" "$sleep_minutes" "$weight_value" "$calories_value" "$distance_value" "$DATE"
+    update_fitness_log \
+        "$steps_value" "$heart_resting" "$sleep_hours" "$sleep_minutes" \
+        "$weight_value" "$calories_value" "$distance_value" \
+        "$floors_value" "$elevation_value" \
+        "$sedentary_value" "$lightly_active_value" "$fairly_active_value" "$very_active_value" \
+        "$body_fat_value" "$bmi_value" "$hrv_daily_rmssd" "$sleep_score" \
+        "$DATE"
 
     log "Fitbit data sync complete for $DATE"
 }
@@ -165,7 +252,17 @@ update_fitness_log() {
     local weight_value="$5"
     local calories_value="$6"
     local distance_value="$7"
-    local date="$8"
+    local floors_value="$8"
+    local elevation_value="$9"
+    local sedentary_value="${10}"
+    local lightly_active_value="${11}"
+    local fairly_active_value="${12}"
+    local very_active_value="${13}"
+    local body_fat_value="${14}"
+    local bmi_value="${15}"
+    local hrv_rmssd="${16}"
+    local sleep_efficiency="${17}"
+    local date="${18}"
 
     local log_file="$FITNESS_DIR/$date.md"
 
@@ -179,32 +276,52 @@ update_fitness_log() {
     fi
 
     # Build Fitbit section
-    echo "## Fitbit Data" > /tmp/fitbit-section.txt
-    echo "" >> /tmp/fitbit-section.txt
-    echo "### Steps" >> /tmp/fitbit-section.txt
-    echo "- Total: $steps_value" >> /tmp/fitbit-section.txt
-    echo "" >> /tmp/fitbit-section.txt
-    echo "### Heart Rate" >> /tmp/fitbit-section.txt
-    echo "- Resting: $heart_resting bpm" >> /tmp/fitbit-section.txt
-    echo "" >> /tmp/fitbit-section.txt
-    echo "### Sleep" >> /tmp/fitbit-section.txt
-    echo "- Duration: ${sleep_hours}h ${sleep_minutes}m" >> /tmp/fitbit-section.txt
-    echo "" >> /tmp/fitbit-section.txt
+    cat > /tmp/fitbit-section.txt << EOF
+## Fitbit Data
 
-    # Weight (optional)
-    if [ "$weight_value" != "null" ] && [ -n "$weight_value" ]; then
-        echo "### Weight" >> /tmp/fitbit-section.txt
-        local weight_formatted=$(printf '%.1f' $weight_value)
-        echo "- $weight_formatted kg" >> /tmp/fitbit-section.txt
-        echo "" >> /tmp/fitbit-section.txt
+### Activity
+- Steps: $steps_value
+- Distance: $(printf '%.2f' "$distance_value") km
+- Floors: $floors_value
+- Elevation: $elevation_value meters
+
+### Active Minutes
+- Sedentary: $sedentary_value min
+- Lightly Active: $lightly_active_value min
+- Fairly Active: $fairly_active_value min
+- Very Active: $very_active_value min
+
+### Heart Rate
+- Resting: $heart_resting bpm
+
+### Heart Rate Variability (HRV)
+- Daily RMSSD: ${hrv_rmssd:-N/A} ms
+
+### Sleep
+- Duration: ${sleep_hours}h ${sleep_minutes}m
+- Efficiency: ${sleep_efficiency:-N/A}%
+
+### Body Composition
+EOF
+
+    # Weight (if available)
+    if [ -n "$weight_value" ] && [ "$weight_value" != "null" ]; then
+        printf -- "- Weight: %.1f kg\n" "$weight_value" >> /tmp/fitbit-section.txt
+    fi
+    
+    # BMI (if available)
+    if [ -n "$bmi_value" ] && [ "$bmi_value" != "null" ]; then
+        printf -- "- BMI: %.1f\n" "$bmi_value" >> /tmp/fitbit-section.txt
+    fi
+    
+    # Body Fat (if available)
+    if [ -n "$body_fat_value" ] && [ "$body_fat_value" != "null" ]; then
+        printf -- "- Body Fat: %.1f%%\n" "$body_fat_value" >> /tmp/fitbit-section.txt
     fi
 
-    echo "### Calories" >> /tmp/fitbit-section.txt
-    echo "- Total: $calories_value kcal" >> /tmp/fitbit-section.txt
     echo "" >> /tmp/fitbit-section.txt
-    echo "### Distance" >> /tmp/fitbit-section.txt
-    local dist_formatted=$(printf '%.2f' $distance_value)
-    echo "- $dist_formatted km" >> /tmp/fitbit-section.txt
+    echo "### Calories" >> /tmp/fitbit-section.txt
+    echo "- Total Burned: $calories_value kcal" >> /tmp/fitbit-section.txt
     echo "" >> /tmp/fitbit-section.txt
     echo "### Activities" >> /tmp/fitbit-section.txt
     echo "*No activities logged*" >> /tmp/fitbit-section.txt
@@ -223,33 +340,42 @@ update_fitness_log() {
         ' "$log_file" > "${log_file}.tmp"
         mv "${log_file}.tmp" "$log_file"
     fi
-    # Insert Fitbit section after the Workout section header line
-    sed -i '/^## Workout/r /tmp/fitbit-section.txt' "$log_file"
+    
+    # Insert Fitbit section - try after Workout section, or append if no Workout section
+    if grep -q "^## Workout" "$log_file"; then
+        sed -i '/^## Workout/r /tmp/fitbit-section.txt' "$log_file"
+    else
+        # Prepend Fitbit section at the beginning (after any header)
+        local header_line=$(head -1 "$log_file")
+        local rest_content=$(tail -n +2 "$log_file")
+        echo "$header_line" > "${log_file}.tmp"
+        cat /tmp/fitbit-section.txt >> "${log_file}.tmp"
+        echo "$rest_content" >> "${log_file}.tmp"
+        mv "${log_file}.tmp" "$log_file"
+    fi
 
     # Update daily stats
+    local sleep_decimal=$(awk "BEGIN {printf \"%.1f\", $sleep_hours + $sleep_minutes/60}")
+    
     if grep -q "^## Daily Stats" "$log_file"; then
-        sed -i "s/- Steps: \[.*\]/- Steps: $steps_value/" "$log_file"
-        if [ "$weight_value" != "null" ] && [ -n "$weight_value" ]; then
-            local weight_fmt=$(printf '%.1f' $weight_value)
-            sed -i "s/- Weight: \[.*\]/- Weight: $weight_fmt kg/" "$log_file"
+        sed -i "s/- Steps: .*/- Steps: $steps_value/" "$log_file"
+        sed -i "s/- Sleep: .*/- Sleep: ${sleep_decimal} h/" "$log_file"
+        if [ -n "$weight_value" ] && [ "$weight_value" != "null" ]; then
+            local weight_fmt=$(printf '%.1f' "$weight_value")
+            sed -i "s/- Weight: .*/- Weight: $weight_fmt kg/" "$log_file"
         fi
-        # Fix sleep duration format (e.g., "4.4 h" instead of "4h 24m")
-        local sleep_decimal=$(awk "BEGIN {printf \"%.1f\", $sleep_hours + $sleep_minutes/60}")
-        sed -i "s/- Sleep: \[.*\]/- Sleep: ${sleep_decimal} h/" "$log_file"
     else
         # Add Daily Stats section
         echo "" >> "$log_file"
         echo "## Daily Stats" >> "$log_file"
         echo "- Steps: $steps_value" >> "$log_file"
-        if [ "$weight_value" != "null" ] && [ -n "$weight_value" ]; then
-            local weight_fmt=$(printf '%.1f' $weight_value)
+        echo "- Sleep: ${sleep_decimal} h" >> "$log_file"
+        if [ -n "$weight_value" ] && [ "$weight_value" != "null" ]; then
+            local weight_fmt=$(printf '%.1f' "$weight_value")
             echo "- Weight: $weight_fmt kg" >> "$log_file"
         else
             echo "- Weight: [from Fitbit or manual]" >> "$log_file"
         fi
-        # Fix sleep duration format
-        local sleep_decimal=$(awk "BEGIN {printf \"%.1f\", $sleep_hours + $sleep_minutes/60}")
-        echo "- Sleep: ${sleep_decimal} h" >> "$log_file"
         echo "- Energy level (1-10): [manual]" >> "$log_file"
         echo "" >> "$log_file"
         echo "## Notes/Observations" >> "$log_file"

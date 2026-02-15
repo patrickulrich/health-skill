@@ -7,7 +7,7 @@ Comprehensive fitness and diet tracking with natural language meal logging, work
 - **Natural language meal logging** — "I had chicken breast and rice for lunch at 2:30 PM"
 - **Natural language workout logging** — "I did 34 situps", "3 sets of bench press at 225 lbs"
 - **Automatic macro calculation** — calories, protein, carbs, fat, sodium, fiber from a 450K+ food database
-- **Fitbit integration** — automated sync of steps, heart rate, sleep, weight, calories burned
+- **Fitbit integration** — automated sync of steps, heart rate, HRV, sleep, weight, body composition, active minutes, and more
 - **Daily health summaries** — combined diet + workout + Fitbit report with coaching notes
 
 ## Setup
@@ -95,6 +95,7 @@ Create the data directories referenced in your config:
 ```bash
 mkdir -p /path/to/your/workspace/fitness/fitbit
 mkdir -p /path/to/your/workspace/diet/images
+mkdir -p /path/to/your/workspace/summaries
 ```
 
 ## Usage
@@ -142,7 +143,7 @@ health-skill/
 │   ├── log_workout.py         # Natural language workout parsing + logging
 │   ├── generate_daily_summary.py  # Daily health report generation
 │   ├── regenerate_summary.py  # Regenerate summary for a past date
-│   └── fitbit-integration/    # Fitbit API sync (Node.js)
+│   └── fitbit-integration/    # Fitbit API sync (bash)
 ├── data/                      # Food databases (not in repo)
 ├── references/                # Macro guidelines, templates
 └── tests/                     # Pytest test suite

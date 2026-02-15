@@ -19,7 +19,7 @@ try:
     from config import DIET_DIR, SKILL_DIR as _SKILL_DIR
 except ImportError:
     _SKILL_DIR = SKILL_DIR
-    DIET_DIR = os.path.join(os.path.dirname(SKILL_DIR), 'diet')
+    DIET_DIR = os.path.join(os.path.dirname(os.path.dirname(SKILL_DIR)), 'diet')
 
 _CUISINE_MAP_FILE = os.path.join(_SKILL_DIR, 'ingredient_cuisine_map.json')
 _CACHE_FILE = os.path.join(_SKILL_DIR, 'meal_history_cache.json')
